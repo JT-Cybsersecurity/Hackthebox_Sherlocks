@@ -50,6 +50,14 @@ The payload which was executed initially downloaded a PowerShell script and exec
 ### Investigation
 To get the contents of the powershell script, we can use ![Wireshark](https://www.wireshark.org/) to view the contents of the script since they used unencrypted HTTP to download the script and execute it in memory.
 
-After opening the packet capture with wireshark, we can filter the data to only show network communications going to or from the IP address "43.205.115.44". 
+After opening the packet capture with wireshark, we can filter the data to only show network communications going to the IP address "43.205.115.44" and has the URI that is requested to get the powershell script from the attacker infrastructure. 
 Filter: 
-- **"ip.dst==43.205.115.44"**
+```text
+**ip.dst==43.205.115.44 && http.request.uri == "/office2024install.ps1"**
+```
+After identifying the http request, we can **Right click on the packet > Follow > Follow > HTTP Stream** or alternatively you can click on the packet and use the shortcut, **Ctrl + Alt + Shift + H**
+
+The http stream will show us the http communication from the compromised host to the attacker infrastructure, revealing the contents of the remotely hosted powershell script. This technique can be used to recover any files transfered over the web over unencrypted traffic.
+
+HTTP Stream:  
+![HTTP Stream}(./Images/wireshark_pikaptcha.png)
