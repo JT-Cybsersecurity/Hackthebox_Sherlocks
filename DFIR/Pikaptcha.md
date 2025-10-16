@@ -56,13 +56,13 @@ Filter:
 **ip.dst==43.205.115.44 && http.request.uri == "/office2024install.ps1"**
 ```
 After identifying the http request, we can **Right click on the packet > Follow > Follow > HTTP Stream** or alternatively you can click on the packet and use the shortcut, **Ctrl + Alt + Shift + H**  
-![HTTP Stream](./Images/wireshark_pikaptcha.png)
+![HTTP Stream](./Images/Pikaptcha/wireshark_pikaptcha.png)
 
 The http stream will show us the http communication from the compromised host to the attacker infrastructure, revealing the contents of the remotely hosted powershell script. This technique can be used to recover any files transfered over the web over unencrypted traffic.
 
 HTTP Stream:  
 
-![HTTP Stream](./Images/http_stream_pikaptcha.png)
+![HTTP Stream](./Images/Pikaptcha/http_stream_pikaptcha.png)
 
 Now that we have the payload which was executed in memory, we can get the sha256 hash by using the following command in a Linux shell, giving us the flag.
 ```text
@@ -128,4 +128,18 @@ The powershell above is a textbook **Reverse Shell** and in the first line of th
 ### Explanation
 To find the answer, we can follow the TCP stream TCP stream that happened immediately after the request for **"/office2024install.ps1"**. Since the tcp stream for execuring the script was tcp stream 219. You can use the following filter to view that stream:
 - tcp.stream eq 220
-To view the commands the threat actor issued, you can click on any of the packets that appeared after the filter and press **Ctrl + Alt + Shift + T** which will display these 
+To view the commands the threat actor issued, you can click on any of the packets that appeared after the filter and press **Ctrl + Alt + Shift + T** which will display these commands:
+![Revshell Commands](./Images/Pikaptcha/revshell_commands.png)
+
+The image displays the threat actor downloading **SharpHoud.ps1** which is a powershell-based collector for BloodHound, a tool used to enumerate domains for weaknesses and privilege escalation paths.
+
+To find the flag, we can modify Wireshark's time display by clicking **View > Time Display Format > Secods** which will change the time display to show at which second each packet was captured.  
+
+![Shell Duration](./Images/Pikaptcha/shell_duration.png)
+
+Subtracting the second the shell started (146) from the second the shell ended (549) reveals the duration the shell was active for in seconds. **549 - 146 = 403**
+
+### Flag
+```text
+403
+```
