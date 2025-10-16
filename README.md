@@ -1,2 +1,6 @@
-# Hackthebox_Sherlocks
-Collection of writeups for Hackthebox Defensive Security challenges
+# Hackthebox Sherlocks
+## About
+This repo contains writeups for blue team HTB challenges. 
+
+## DFIR
+- ![Pikaptcha (Easy)](./DFIR/Pikaptcha.md)
