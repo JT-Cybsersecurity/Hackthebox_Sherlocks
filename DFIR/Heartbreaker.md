@@ -4,3 +4,10 @@ Delicate situation alert! The customer has just been alerted about concerning re
 
 ## Task 1
 **The victim received an email from an unidentified sender. What email address was used for the suspicious email?**
+
+### Analysis
+After looking at the files provided, I determined the user was using Outlook for their email. Armed with this knowledge, we can get the email file which would be an **".ost"" or ".pst"** filetype. These files
+
+
+IAM Credentials
+AKIA52GPOBQCK73P2PXL,OFqG/yLZYaudty0Rma6arxVuHFTGQuM6ST8SWySj
